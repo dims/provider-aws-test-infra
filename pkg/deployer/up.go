@@ -182,11 +182,22 @@ func (a *AWSRunner) Validate() error {
 func (a *AWSRunner) prepareAWSImages() ([]internalAWSImage, error) {
 	var ret []internalAWSImage
 
+	var userdata []byte
+	var err error
+	if a.deployer.UserDataFile != "" {
+		userdata, err = os.ReadFile(a.deployer.UserDataFile)
+		if err != nil {
+			return nil, fmt.Errorf("reading userdata file %q, %w", a.deployer.UserDataFile, err)
+		}
+	}
+
 	if len(a.deployer.Images) > 0 {
-		for _, img := range a.deployer.Images {
+		for _, imageID := range a.deployer.Images {
 			ret = append(ret, internalAWSImage{
-				amiID:        img,
-				instanceType: a.deployer.InstanceType,
+				amiID:           imageID,
+				userData:        userdata,
+				instanceType:    a.deployer.InstanceType,
+				instanceProfile: a.deployer.InstanceProfile,
 			})
 		}
 	}
