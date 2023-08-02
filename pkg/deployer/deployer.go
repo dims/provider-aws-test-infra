@@ -70,11 +70,12 @@ type deployer struct {
 	KubeconfigPath string `flag:"kubeconfig" desc:"Absolute path to existing kubeconfig for cluster"`
 	RepoRoot       string `desc:"The path to the root of the local kubernetes/kubernetes repo."`
 
-	Region             string `desc:"AWS region that the hosts live in (aws)"`
-	UserDataFile       string `desc:"Path to user data to pass to created instances (aws)"`
-	InstanceProfile    string `desc:"The name of the instance profile to assign to the node (aws)"`
-	Ec2InstanceConnect bool   `desc:"Use EC2 instance connect to generate a one time use key (aws)"`
-	InstanceType       string `desc:"EC2 Instance type to use for test"`
+	Region             string   `desc:"AWS region that the hosts live in (aws)"`
+	UserDataFile       string   `desc:"Path to user data to pass to created instances (aws)"`
+	InstanceProfile    string   `desc:"The name of the instance profile to assign to the node (aws)"`
+	Ec2InstanceConnect bool     `desc:"Use EC2 instance connect to generate a one time use key (aws)"`
+	InstanceType       string   `desc:"EC2 Instance type to use for test"`
+	Images             []string `flag:"~images" desc:"images to test"`
 }
 
 func (d *deployer) Down() error {

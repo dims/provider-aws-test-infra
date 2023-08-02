@@ -86,9 +86,8 @@ func (d *deployer) Up() error {
 	}
 	d.kubectlPath = path
 
-	var cfg remote.Config
-	runner := d.NewAWSRunner(cfg)
-	err = runner.Validate(cfg)
+	runner := d.NewAWSRunner()
+	err = runner.Validate()
 	if err != nil {
 		return err
 	}
@@ -151,22 +150,18 @@ type temporarySSHKey struct {
 	signer  ssh.Signer
 }
 
-func (d *deployer) NewAWSRunner(cfg remote.Config) *AWSRunner {
-	if cfg.InstanceNamePrefix == "" {
-		cfg.InstanceNamePrefix = "tmp-node-e2e-" + uuid.New().String()[:8]
-	}
-
+func (d *deployer) NewAWSRunner() *AWSRunner {
 	return &AWSRunner{
 		deployer:           d,
-		instanceNamePrefix: cfg.InstanceNamePrefix,
+		instanceNamePrefix: "tmp-e2e-" + uuid.New().String()[:8],
 	}
 }
 
-func (a *AWSRunner) Validate(cfg remote.Config) error {
-	if len(cfg.Images) == 0 {
+func (a *AWSRunner) Validate() error {
+	if len(a.deployer.Images) == 0 {
 		klog.Fatalf("Must specify --images.")
 	}
-	for _, img := range cfg.Images {
+	for _, img := range a.deployer.Images {
 		if !strings.HasPrefix(img, "ami-") {
 			return fmt.Errorf("invalid AMI id format for %q", img)
 		}
@@ -178,17 +173,17 @@ func (a *AWSRunner) Validate(cfg remote.Config) error {
 	a.ec2Service = ec2.New(sess)
 	a.ec2icService = ec2instanceconnect.New(sess)
 	a.ssmService = ssm.New(sess)
-	if a.internalAWSImages, err = a.prepareAWSImages(cfg); err != nil {
+	if a.internalAWSImages, err = a.prepareAWSImages(); err != nil {
 		klog.Fatalf("While preparing AWS images: %v", err)
 	}
 	return nil
 }
 
-func (a *AWSRunner) prepareAWSImages(cfg remote.Config) ([]internalAWSImage, error) {
+func (a *AWSRunner) prepareAWSImages() ([]internalAWSImage, error) {
 	var ret []internalAWSImage
 
-	if len(cfg.Images) > 0 {
-		for _, img := range cfg.Images {
+	if len(a.deployer.Images) > 0 {
+		for _, img := range a.deployer.Images {
 			ret = append(ret, internalAWSImage{
 				amiID:        img,
 				instanceType: a.deployer.InstanceType,
