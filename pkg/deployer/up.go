@@ -43,6 +43,16 @@ import (
 )
 
 func (d *deployer) IsUp() (up bool, err error) {
+	for _, instance := range d.runner.instances {
+		instance, err := d.runner.isAWSInstanceRunning(instance)
+		if err != nil {
+			return false, err
+		}
+		if instance == nil {
+			return false, fmt.Errorf("instance %s not yet started", instance.instance.InstanceId)
+		}
+		klog.V(2).Infof("found instance id: %s", instance.instanceID)
+	}
 	args := []string{
 		d.kubectlPath,
 		"get",
@@ -98,6 +108,7 @@ func (d *deployer) Up() error {
 			return err
 		}
 		klog.V(2).Infof("starting instance id: %s", instance.instanceID)
+		runner.instances = append(runner.instances, instance)
 	}
 	return nil
 }
@@ -111,6 +122,7 @@ type AWSRunner struct {
 	ssmService         *ssm.SSM
 	instanceNamePrefix string
 	internalAWSImages  []internalAWSImage
+	instances          []*awsInstance
 }
 
 type AWSImageConfig struct {
@@ -151,10 +163,11 @@ type temporarySSHKey struct {
 }
 
 func (d *deployer) NewAWSRunner() *AWSRunner {
-	return &AWSRunner{
+	d.runner = &AWSRunner{
 		deployer:           d,
 		instanceNamePrefix: "tmp-e2e-" + uuid.New().String()[:8],
 	}
+	return d.runner
 }
 
 func (a *AWSRunner) Validate() error {
@@ -177,6 +190,63 @@ func (a *AWSRunner) Validate() error {
 		klog.Fatalf("While preparing AWS images: %v", err)
 	}
 	return nil
+}
+
+func (a *AWSRunner) isAWSInstanceRunning(testInstance *awsInstance) (*awsInstance, error) {
+	instanceRunning := false
+	createdSSHKey := false
+	for i := 0; i < 3 && !instanceRunning; i++ {
+		if i > 0 {
+			time.Sleep(time.Second * 10)
+		}
+
+		var op *ec2.DescribeInstancesOutput
+		op, err := a.ec2Service.DescribeInstances(&ec2.DescribeInstancesInput{
+			InstanceIds: []*string{&testInstance.instanceID},
+		})
+		if err != nil {
+			continue
+		}
+		instance := op.Reservations[0].Instances[0]
+		if *instance.State.Name != ec2.InstanceStateNameRunning {
+			continue
+		}
+		testInstance.publicIP = *instance.PublicIpAddress
+
+		// generate a temporary SSH key and send it to the node via instance-connect
+		if a.deployer.Ec2InstanceConnect && !createdSSHKey {
+			klog.Info("instance-connect flag is set, using ec2 instance connect to configure a temporary SSH key")
+			err = a.assignNewSSHKey(testInstance)
+			if err != nil {
+				klog.Infof("instance connect err = %s", err)
+				continue
+			}
+			createdSSHKey = true
+		}
+
+		klog.Infof("registering %s/%s", testInstance.instanceID, testInstance.publicIP)
+		remote.AddHostnameIP(testInstance.instanceID, testInstance.publicIP)
+
+		//// ensure that containerd or CRIO is running
+		//var output string
+		//output, err = remote.SSH(testInstance.instanceID, "sh", "-c", "systemctl list-units  --type=service  --state=running | grep -e containerd -e crio")
+		//if err != nil {
+		//	err = fmt.Errorf("instance %s not running containerd/crio daemon - Command failed: %s", testInstance.instanceID, output)
+		//	continue
+		//}
+		//if !strings.Contains(output, "containerd.service") &&
+		//	!strings.Contains(output, "crio.service") {
+		//	err = fmt.Errorf("instance %s not running containerd/crio daemon: %s", testInstance.instanceID, output)
+		//	continue
+		//}
+
+		instanceRunning = true
+	}
+
+	if !instanceRunning {
+		return nil, fmt.Errorf("instance %s is not running, %w", testInstance.instanceID)
+	}
+	return testInstance, nil
 }
 
 func (a *AWSRunner) prepareAWSImages() ([]internalAWSImage, error) {

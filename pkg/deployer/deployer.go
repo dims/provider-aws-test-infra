@@ -76,6 +76,8 @@ type deployer struct {
 	Ec2InstanceConnect bool     `desc:"Use EC2 instance connect to generate a one time use key (aws)"`
 	InstanceType       string   `desc:"EC2 Instance type to use for test"`
 	Images             []string `flag:"~images" desc:"images to test"`
+
+	runner *AWSRunner
 }
 
 func (d *deployer) Down() error {
