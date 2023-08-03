@@ -22,6 +22,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
+	"flag"
 	"fmt"
 	"os"
 	osexec "os/exec"
@@ -287,6 +288,11 @@ func (a *AWSRunner) deleteAWSInstance(instanceID string) {
 func (a *AWSRunner) getAWSInstance(img internalAWSImage) (*awsInstance, error) {
 	if a.deployer.SSHUser == "" {
 		return nil, fmt.Errorf("please set '--ssh-user' parameter")
+	} else {
+		err := flag.Set("ssh-env", "aws")
+		if err != nil {
+			return nil, fmt.Errorf("unable to set flag ssh-env: %w", err)
+		}
 	}
 	// TODO: Throw an error or log a warning
 	// first see if we have an instance already running the desired image

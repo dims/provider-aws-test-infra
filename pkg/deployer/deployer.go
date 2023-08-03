@@ -54,6 +54,7 @@ func New(opts types.Options) (types.Deployer, *pflag.FlagSet) {
 		Ec2InstanceConnect: true,
 		InstanceType:       "t3a.medium",
 		SSHUser:            remote.GetSSHUser(),
+		SSHEnv:             "aws",
 	}
 	// register flags and return
 	return d, bindFlags(d)
@@ -80,6 +81,7 @@ type deployer struct {
 	InstanceType       string   `desc:"EC2 Instance type to use for test"`
 	Images             []string `flag:"~images" desc:"images to test"`
 	SSHUser            string   `flag:"ssh-user" desc:"The SSH user to use for SSH access to instances"`
+	SSHEnv             string   `flag:"ssh-env" desc:"Use predefined ssh options for environment."`
 
 	runner *AWSRunner
 }
