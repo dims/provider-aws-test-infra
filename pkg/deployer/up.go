@@ -289,7 +289,11 @@ func (a *AWSRunner) getAWSInstance(img internalAWSImage) (*awsInstance, error) {
 	if a.deployer.SSHUser == "" {
 		return nil, fmt.Errorf("please set '--ssh-user' parameter")
 	} else {
-		err := flag.Set("ssh-env", "aws")
+		err := flag.Set("ssh-user", a.deployer.SSHUser)
+		if err != nil {
+			return nil, fmt.Errorf("unable to set flag ssh-user: %w", err)
+		}
+		err = flag.Set("ssh-env", "aws")
 		if err != nil {
 			return nil, fmt.Errorf("unable to set flag ssh-env: %w", err)
 		}
