@@ -433,7 +433,7 @@ func (a *AWSRunner) assignNewSSHKey(testInstance *awsInstance) error {
 func (a *AWSRunner) launchNewInstance(img internalAWSImage) (*ec2.Instance, error) {
 	images, err := a.ec2Service.DescribeImages(&ec2.DescribeImagesInput{ImageIds: []*string{&img.amiID}})
 	if err != nil {
-		return nil, fmt.Errorf("describing images, %w", err)
+		return nil, fmt.Errorf("describing images: %w in region (%s)", err, *a.ec2Service.Config.Region)
 	}
 
 	input := &ec2.RunInstancesInput{
