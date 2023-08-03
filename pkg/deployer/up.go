@@ -285,6 +285,9 @@ func (a *AWSRunner) deleteAWSInstance(instanceID string) {
 }
 
 func (a *AWSRunner) getAWSInstance(img internalAWSImage) (*awsInstance, error) {
+	if a.deployer.SSHUser == "" {
+		return nil, fmt.Errorf("please set '--ssh-user' parameter")
+	}
 	// TODO: Throw an error or log a warning
 	// first see if we have an instance already running the desired image
 	_, err := a.ec2Service.DescribeInstances(&ec2.DescribeInstancesInput{
@@ -383,22 +386,22 @@ func (a *AWSRunner) assignNewSSHKey(testInstance *awsInstance) error {
 	testInstance.sshKey = key
 	_, err = a.ec2icService.SendSSHPublicKey(&ec2instanceconnect.SendSSHPublicKeyInput{
 		InstanceId:       aws.String(testInstance.instanceID),
-		InstanceOSUser:   aws.String(remote.GetSSHUser()),
+		InstanceOSUser:   aws.String(a.deployer.SSHUser),
 		SSHPublicKey:     aws.String(string(key.public)),
 		AvailabilityZone: testInstance.instance.Placement.AvailabilityZone,
 	})
 	if err != nil {
-		return fmt.Errorf("sending SSH public key for serial console access, %w", err)
+		return fmt.Errorf("sending SSH public key for serial console access for %s, %w", a.deployer.SSHUser, err)
 	}
 	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", testInstance.publicIP), &ssh.ClientConfig{
-		User:            remote.GetSSHUser(),
+		User:            a.deployer.SSHUser,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(key.signer),
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("dialing SSH %s@%s %w", remote.GetSSHUser(), testInstance.publicIP, err)
+		return fmt.Errorf("dialing SSH %s@%s %w", a.deployer.SSHUser, testInstance.publicIP, err)
 	}
 
 	// add our ssh key to authorized keys so it will last longer than 60 seconds

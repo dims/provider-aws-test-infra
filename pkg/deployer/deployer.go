@@ -26,9 +26,11 @@ import (
 	"github.com/spf13/pflag"
 
 	"k8s.io/klog/v2"
+	"k8s.io/kubernetes/test/e2e_node/remote"
 
 	"sigs.k8s.io/kubetest2/pkg/build"
 	"sigs.k8s.io/kubetest2/pkg/types"
+
 	"sigs.k8s.io/provider-aws-test-infra/pkg/deployer/options"
 )
 
@@ -51,6 +53,7 @@ func New(opts types.Options) (types.Deployer, *pflag.FlagSet) {
 		},
 		Ec2InstanceConnect: true,
 		InstanceType:       "t3a.medium",
+		SSHUser:            remote.GetSSHUser(),
 	}
 	// register flags and return
 	return d, bindFlags(d)
@@ -76,6 +79,7 @@ type deployer struct {
 	Ec2InstanceConnect bool     `desc:"Use EC2 instance connect to generate a one time use key (aws)"`
 	InstanceType       string   `desc:"EC2 Instance type to use for test"`
 	Images             []string `flag:"~images" desc:"images to test"`
+	SSHUser            string   `flag:"ssh-user" desc:"The SSH user to use for SSH access to instances"`
 
 	runner *AWSRunner
 }
