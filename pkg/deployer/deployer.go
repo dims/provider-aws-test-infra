@@ -28,9 +28,9 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/kubernetes/test/e2e_node/remote"
 
-	"sigs.k8s.io/kubetest2/pkg/build"
 	"sigs.k8s.io/kubetest2/pkg/types"
 
+	"sigs.k8s.io/provider-aws-test-infra/pkg/deployer/build"
 	"sigs.k8s.io/provider-aws-test-infra/pkg/deployer/options"
 )
 
@@ -46,9 +46,10 @@ func New(opts types.Options) (types.Deployer, *pflag.FlagSet) {
 		commonOptions: opts,
 		BuildOptions: &options.BuildOptions{
 			CommonBuildOptions: &build.Options{
-				Builder:  &build.MakeBuilder{},
-				Stager:   &build.NoopStager{},
-				Strategy: "make",
+				Builder: &build.MakeBuilder{
+					TargetBuildArch: "linux/amd64",
+				},
+				TargetBuildArch: "linux/amd64",
 			},
 		},
 		Ec2InstanceConnect: true,

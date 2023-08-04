@@ -22,7 +22,7 @@ import (
 
 	"k8s.io/klog/v2"
 
-	"sigs.k8s.io/kubetest2/pkg/build"
+	"sigs.k8s.io/provider-aws-test-infra/pkg/deployer/build"
 )
 
 func (d *deployer) Build() error {

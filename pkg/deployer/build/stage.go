@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,26 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package options
+package build
 
-import (
-	"sigs.k8s.io/provider-aws-test-infra/pkg/deployer/build"
-)
-
-type BuildOptions struct {
-	CommonBuildOptions *build.Options
+type Stager interface {
+	// Stage determines how kubernetes artifacts will be staged (e.g. to say a GCS bucket)
+	// for the specified version
+	Stage(version string) error
 }
 
-var _ build.Builder = &BuildOptions{}
+type NoopStager struct{}
 
-func (bo *BuildOptions) Validate() error {
-	return bo.CommonBuildOptions.Validate()
-}
+var _ Stager = &NoopStager{}
 
-func (bo *BuildOptions) Build() (string, error) {
-	return bo.CommonBuildOptions.Build()
-}
-
-func (bo *BuildOptions) Stage(version string) interface{} {
-	return bo.CommonBuildOptions.Stage(version)
+func (n *NoopStager) Stage(string) error {
+	return nil
 }
