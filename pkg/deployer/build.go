@@ -50,6 +50,6 @@ func (d *deployer) Build() error {
 			return fmt.Errorf("error staging build: %v", err)
 		}
 	}
-	build.StoreCommonBinaries(d.RepoRoot, d.commonOptions.RunDir())
+	build.StoreCommonBinaries(d.RepoRoot, d.commonOptions.RunDir(), d.BuildOptions.CommonBuildOptions.TargetBuildArch)
 	return nil
 }

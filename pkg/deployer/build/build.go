@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"k8s.io/klog/v2"
@@ -83,9 +82,9 @@ var (
 
 // StoreCommonBinaries will best effort try to store commonly built binaries
 // to the output directory
-func StoreCommonBinaries(kuberoot string, outroot string) {
+func StoreCommonBinaries(kuberoot string, outroot string, targetBuildArch string) {
 	const dockerizedOutput = "_output/dockerized"
-	root := filepath.Join(kuberoot, dockerizedOutput, "bin", runtime.GOOS, runtime.GOARCH)
+	root := filepath.Join(kuberoot, dockerizedOutput, "bin", targetBuildArch)
 	for _, binary := range CommonTestBinaries {
 		source := filepath.Join(root, binary)
 		dest := filepath.Join(outroot, binary)
