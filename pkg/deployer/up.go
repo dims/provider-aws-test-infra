@@ -248,7 +248,7 @@ func (a *AWSRunner) isAWSInstanceRunning(testInstance *awsInstance) (*awsInstanc
 		return nil, fmt.Errorf("instance %s is not running, %w", testInstance.instanceID)
 	}
 
-	fmt.Printf("instance %s is running, %w", testInstance.instanceID)
+	klog.Infof("instance %s is running, %w", testInstance.instanceID)
 	return testInstance, nil
 }
 
