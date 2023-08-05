@@ -20,6 +20,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+
 	"k8s.io/klog/v2"
 
 	"sigs.k8s.io/provider-aws-test-infra/pkg/deployer/build"
@@ -27,6 +32,18 @@ import (
 
 func (d *deployer) Build() error {
 	klog.V(1).Info("EC2 deployer starting Build()")
+
+	sess, err := session.NewSession(&aws.Config{Region: aws.String(d.Region)})
+	if err != nil {
+		klog.Fatalf("Unable to create AWS session, %s", err)
+	}
+	s3Uploader := s3manager.NewUploaderWithClient(s3.New(sess), func(u *s3manager.Uploader) {
+		u.PartSize = 10 * 1024 * 1024 // 50 mb
+		u.Concurrency = 10
+	})
+	d.BuildOptions.CommonBuildOptions.S3Uploader = s3Uploader
+
+	d.BuildOptions.Validate()
 
 	// this supports the kubernetes/kubernetes build
 	klog.V(2).Info("starting to build kubernetes")
@@ -50,6 +67,7 @@ func (d *deployer) Build() error {
 			return fmt.Errorf("error staging build: %v", err)
 		}
 	}
-	build.StoreCommonBinaries(d.RepoRoot, d.commonOptions.RunDir(), d.BuildOptions.CommonBuildOptions.TargetBuildArch)
+	build.StoreCommonBinaries(d.RepoRoot, d.commonOptions.RunDir(),
+		d.BuildOptions.CommonBuildOptions.TargetBuildArch)
 	return nil
 }

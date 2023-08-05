@@ -34,6 +34,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2instanceconnect"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/ssh"
@@ -187,6 +189,11 @@ func (a *AWSRunner) Validate() error {
 	a.ec2Service = ec2.New(sess)
 	a.ec2icService = ec2instanceconnect.New(sess)
 	a.ssmService = ssm.New(sess)
+	s3Uploader := s3manager.NewUploaderWithClient(s3.New(sess), func(u *s3manager.Uploader) {
+		u.PartSize = 10 * 1024 * 1024 // 50 mb
+		u.Concurrency = 10
+	})
+	a.deployer.BuildOptions.CommonBuildOptions.S3Uploader = s3Uploader
 	if a.internalAWSImages, err = a.prepareAWSImages(); err != nil {
 		klog.Fatalf("While preparing AWS images: %v", err)
 	}

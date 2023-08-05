@@ -16,14 +16,19 @@ limitations under the License.
 
 package build
 
+import (
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+)
+
 // ignore package name stutter
 type BuildAndStageStrategy string //nolint:golint
 
 type Options struct {
-	StageLocation   string `flag:"~stage" desc:"Upload binaries to gs://bucket/ci/job-suffix if set"`
+	StageLocation   string `flag:"~stage" desc:"Upload binaries to s3 bucket if set"`
 	RepoRoot        string `flag:"-"`
 	VersionSuffix   string `flag:"-"`
 	TargetBuildArch string `flag:"~target-build-arch" desc:"Target architecture for the test artifacts"`
+	S3Uploader      *s3manager.Uploader
 	Builder
 	Stager
 }
@@ -35,6 +40,11 @@ func (o *Options) Validate() error {
 func (o *Options) implementationFromStrategy() error {
 	o.Builder = &MakeBuilder{
 		RepoRoot:        o.RepoRoot,
+		TargetBuildArch: o.TargetBuildArch,
+	}
+	o.Stager = &S3Stager{
+		StageLocation:   o.StageLocation,
+		s3Uploader:      o.S3Uploader,
 		TargetBuildArch: o.TargetBuildArch,
 	}
 	return nil

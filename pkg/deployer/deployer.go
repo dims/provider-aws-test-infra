@@ -49,6 +49,9 @@ func New(opts types.Options) (types.Deployer, *pflag.FlagSet) {
 				Builder: &build.MakeBuilder{
 					TargetBuildArch: "linux/amd64",
 				},
+				Stager: &build.S3Stager{
+					TargetBuildArch: "linux/amd64",
+				},
 				TargetBuildArch: "linux/amd64",
 			},
 		},
@@ -56,6 +59,7 @@ func New(opts types.Options) (types.Deployer, *pflag.FlagSet) {
 		InstanceType:       "t3a.medium",
 		SSHUser:            remote.GetSSHUser(),
 		SSHEnv:             "aws",
+		Region:             "us-east-1",
 	}
 	// register flags and return
 	return d, bindFlags(d)
