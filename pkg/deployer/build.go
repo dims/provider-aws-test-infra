@@ -18,8 +18,6 @@ package deployer
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -50,15 +48,6 @@ func (d *deployer) Build() error {
 	version, err := d.BuildOptions.Build()
 	if err != nil {
 		return err
-	}
-
-	// append the kubetest2 run id
-	// avoid double + in the version
-	// so they are valid docker tags
-	if strings.Contains(version, "+") {
-		version += "-" + d.commonOptions.RunID()
-	} else {
-		version += "+" + d.commonOptions.RunID()
 	}
 
 	// stage build if requested
