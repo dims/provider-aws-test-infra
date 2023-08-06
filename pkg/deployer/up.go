@@ -57,13 +57,18 @@ func (d *deployer) IsUp() (up bool, err error) {
 			return false, fmt.Errorf("instance %s not yet started", instance.instance.InstanceId)
 		}
 		klog.V(2).Infof("found instance id: %s", instance.instanceID)
+		d.KubeconfigPath = downloadKubeConfig(instance.instanceID)
+		break
 	}
 	args := []string{
 		d.kubectlPath,
+		"--kubeconfig",
+		d.KubeconfigPath,
 		"get",
 		"nodes",
 		"-o=name",
 	}
+	klog.Infof("Running kubectl command %v", args)
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.SetStderr(os.Stderr)
 	lines, err := exec.OutputLines(cmd)
@@ -265,10 +270,33 @@ func (a *AWSRunner) isAWSInstanceRunning(testInstance *awsInstance) (*awsInstanc
 
 	if !instanceRunning {
 		return nil, fmt.Errorf("instance %s is not running, %w", testInstance.instanceID)
+	} else {
+		a.deployer.KubeconfigPath = downloadKubeConfig(testInstance.instanceID)
 	}
-
 	klog.Infof("instance %s is running, %w", testInstance.instanceID)
 	return testInstance, nil
+}
+
+func downloadKubeConfig(instanceID string) string {
+	output, err := remote.SSH(instanceID, "sh", "-c", "cat /etc/kubernetes/admin.conf")
+	if err != nil {
+		klog.Fatalf("error downloading KUBECONFIG file: %v", err)
+	}
+	// write our KUBECONFIG to disk and register it
+	f, err := os.CreateTemp("", ".kubeconfig-*")
+	if err != nil {
+		klog.Fatalf("creating KUBECONFIG file, %w", err)
+	}
+	kubeconfigFile := f.Name()
+	if err = os.Chmod(kubeconfigFile, 0400); err != nil {
+		klog.Fatalf("chmod'ing KUBECONFIG file, %w", err)
+	}
+
+	if _, err = f.Write([]byte(output)); err != nil {
+		klog.Fatalf("writing KUBECONFIG file, %w", err)
+	}
+	klog.Infof("KUBECONFIG=%v", f.Name())
+	return f.Name()
 }
 
 func (a *AWSRunner) prepareAWSImages() ([]internalAWSImage, error) {
@@ -426,7 +454,10 @@ func (a *AWSRunner) getAWSInstance(img internalAWSImage) (*awsInstance, error) {
 
 	if !instanceRunning {
 		return nil, fmt.Errorf("instance %s is not running, %w", testInstance.instanceID, err)
+	} else {
+		a.deployer.KubeconfigPath = downloadKubeConfig(testInstance.instanceID)
 	}
+
 	return testInstance, nil
 }
 
