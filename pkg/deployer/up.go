@@ -205,7 +205,7 @@ func (a *AWSRunner) Validate() error {
 func (a *AWSRunner) isAWSInstanceRunning(testInstance *awsInstance) (*awsInstance, error) {
 	instanceRunning := false
 	createdSSHKey := false
-	for i := 0; i < 3 && !instanceRunning; i++ {
+	for i := 0; i < 30 && !instanceRunning; i++ {
 		if i > 0 {
 			time.Sleep(time.Second * 10)
 		}
@@ -237,18 +237,28 @@ func (a *AWSRunner) isAWSInstanceRunning(testInstance *awsInstance) (*awsInstanc
 		klog.Infof("registering %s/%s", testInstance.instanceID, testInstance.publicIP)
 		remote.AddHostnameIP(testInstance.instanceID, testInstance.publicIP)
 
-		//// ensure that containerd or CRIO is running
-		//var output string
-		//output, err = remote.SSH(testInstance.instanceID, "sh", "-c", "systemctl list-units  --type=service  --state=running | grep -e containerd -e crio")
-		//if err != nil {
-		//	err = fmt.Errorf("instance %s not running containerd/crio daemon - Command failed: %s", testInstance.instanceID, output)
-		//	continue
-		//}
-		//if !strings.Contains(output, "containerd.service") &&
-		//	!strings.Contains(output, "crio.service") {
-		//	err = fmt.Errorf("instance %s not running containerd/crio daemon: %s", testInstance.instanceID, output)
-		//	continue
-		//}
+		// ensure that containerd or CRIO is running
+		var output string
+		output, err = remote.SSH(testInstance.instanceID, "sh", "-c", "systemctl list-units  --type=service  --state=running | grep -e containerd -e crio")
+		if err != nil {
+			err = fmt.Errorf("instance %s not running containerd/crio daemon - Command failed: %s", testInstance.instanceID, output)
+			continue
+		}
+		if !strings.Contains(output, "containerd.service") &&
+			!strings.Contains(output, "crio.service") {
+			err = fmt.Errorf("instance %s not yet running containerd/crio daemon: %s", testInstance.instanceID, output)
+			continue
+		}
+
+		output, err = remote.SSH(testInstance.instanceID, "sh", "-c", "systemctl status cloud-init.service")
+		if err != nil {
+			err = fmt.Errorf("checking instance %s is running cloud-init - Command failed: %s", testInstance.instanceID, output)
+			continue
+		}
+		if !strings.Contains(output, "exited") {
+			err = fmt.Errorf("instance %s is still running cloud-init daemon: %s", testInstance.instanceID, output)
+			continue
+		}
 
 		instanceRunning = true
 	}
@@ -356,9 +366,9 @@ func (a *AWSRunner) getAWSInstance(img internalAWSImage) (*awsInstance, error) {
 
 	instanceRunning := false
 	createdSSHKey := false
-	for i := 0; i < 10 && !instanceRunning; i++ {
+	for i := 0; i < 30 && !instanceRunning; i++ {
 		if i > 0 {
-			time.Sleep(time.Second * 20)
+			time.Sleep(time.Second * 10)
 		}
 
 		var op *ec2.DescribeInstancesOutput
@@ -392,12 +402,22 @@ func (a *AWSRunner) getAWSInstance(img internalAWSImage) (*awsInstance, error) {
 		var output string
 		output, err = remote.SSH(testInstance.instanceID, "sh", "-c", "systemctl list-units  --type=service  --state=running | grep -e containerd -e crio")
 		if err != nil {
-			err = fmt.Errorf("instance %s not running containerd/crio daemon - Command failed: %s", testInstance.instanceID, output)
+			err = fmt.Errorf("checking instance %s not running containerd/crio daemon - Command failed: %s", testInstance.instanceID, output)
 			continue
 		}
 		if !strings.Contains(output, "containerd.service") &&
 			!strings.Contains(output, "crio.service") {
 			err = fmt.Errorf("instance %s not running containerd/crio daemon: %s", testInstance.instanceID, output)
+			continue
+		}
+
+		output, err = remote.SSH(testInstance.instanceID, "sh", "-c", "systemctl status cloud-init.service")
+		if err != nil {
+			err = fmt.Errorf("checking instance %s is running cloud-init - Command failed: %s", testInstance.instanceID, output)
+			continue
+		}
+		if !strings.Contains(output, "exited") {
+			err = fmt.Errorf("instance %s is still running cloud-init daemon: %s", testInstance.instanceID, output)
 			continue
 		}
 

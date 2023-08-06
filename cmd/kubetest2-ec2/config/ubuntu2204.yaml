@@ -11,6 +11,7 @@ packages:
     - socat
     - conntrack
     - awscli
+    - net-tools
 write_files:
   - path: /tmp/bootstrap/extra-fetches.yaml
     content: |
@@ -115,22 +116,28 @@ write_files:
       #!/bin/bash
       set -xeu
 
-      aws s3 cp s3://{{STAGING_BUCKET}}/{{STAGING_VERSION}}/kubernetes-server-linux-amd64.tar.gz kubernetes-server-linux-amd64.tar.gz --no-sign-request
+      if [ "$(uname -m)" = "arm64" ] || [ "$(uname -m)" = "aarch64" ]; then
+        ARCH=arm64
+      else
+        ARCH=amd64
+      fi
 
-      tar -xvzf kubernetes-server-linux-amd64.tar.gz
+      aws s3 cp s3://{{STAGING_BUCKET}}/{{STAGING_VERSION}}/kubernetes-server-linux-$ARCH.tar.gz kubernetes-server-linux-$ARCH.tar.gz --no-sign-request
+
+      tar -xvzf kubernetes-server-linux-$ARCH.tar.gz
       sudo cp ./kubernetes/server/bin/* /usr/local/bin/
 
       VERSION="v1.27.1"
-      curl -sSL --fail --retry 5 https://storage.googleapis.com/k8s-artifacts-cri-tools/release/$VERSION/crictl-$VERSION-linux-amd64.tar.gz | sudo tar -xvzf - -C /usr/local/bin
+      curl -sSL --fail --retry 5 https://storage.googleapis.com/k8s-artifacts-cri-tools/release/$VERSION/crictl-$VERSION-linux-$ARCH.tar.gz | sudo tar -xvzf - -C /usr/local/bin
 
       sudo modprobe br_netfilter
       sudo sysctl --system
       sudo systemctl daemon-reload && sudo systemctl restart kubelet
 
-      sudo ln -s /home/containerd/usr/local/bin/ctr /usr/local/bin/ctr
+      sudo ln -s /home/containerd/usr/local/bin/ctr /usr/local/bin/ctr || true
       find . -name *.tar | xargs -L 1 ctr -n k8s.io images import
 
-      ctr -n k8s.io images ls -q | grep -e amd64 | xargs -L 1 -I '{}' /bin/bash -c 'ctr -n k8s.io images tag "{}" "$(echo "{}" | sed s/-amd64:/:/)"'
+      ctr -n k8s.io images ls -q | grep -e $ARCH | xargs -L 1 -I '{}' /bin/bash -c 'ctr -n k8s.io images tag "{}" "$(echo "{}" | sed s/-'$ARCH':/:/)"'
 
       sudo kubeadm init \
        --cri-socket /run/containerd/containerd.sock \
