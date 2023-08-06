@@ -111,15 +111,16 @@ write_files:
     content: |
       #!/bin/bash
       set -xeu
-      wget https://dims-aws-test-infra.s3.amazonaws.com/v1.29.0-alpha.0.40%2Bf4041204c00293/kubernetes-server-linux-amd64.tar.gz
+
+      sudo apt update
+      sudo apt install -y socat conntrack awscli
+
+      aws s3 cp s3://{{STAGING_BUCKET}}/{{STAGING_VERSION}}/kubernetes-server-linux-amd64.tar.gz kubernetes-server-linux-amd64.tar.gz --no-sign-request
 
       tar -xvzf kubernetes-server-linux-amd64.tar.gz
       sudo cp ./kubernetes/server/bin/* /usr/local/bin/
       sudo kubeadm version
       sudo kubelet --version
-
-      sudo apt update
-      sudo apt install -y socat conntrack
 
       VERSION="v1.27.1"
       wget https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-$VERSION-linux-amd64.tar.gz

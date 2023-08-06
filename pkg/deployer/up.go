@@ -43,6 +43,8 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/kubernetes/test/e2e_node/remote"
 	"sigs.k8s.io/kubetest2/pkg/exec"
+
+	"sigs.k8s.io/provider-aws-test-infra/pkg/deployer/utils"
 )
 
 func (d *deployer) IsUp() (up bool, err error) {
@@ -145,7 +147,7 @@ type internalAWSImage struct {
 	amiID string
 	// The instance type (e.g. t3a.medium)
 	instanceType string
-	userData     []byte
+	userData     string
 	imageDesc    string
 	// name of the instance profile
 	instanceProfile string
@@ -262,13 +264,27 @@ func (a *AWSRunner) isAWSInstanceRunning(testInstance *awsInstance) (*awsInstanc
 func (a *AWSRunner) prepareAWSImages() ([]internalAWSImage, error) {
 	var ret []internalAWSImage
 
-	var userdata []byte
-	var err error
+	var userdata string
 	if a.deployer.UserDataFile != "" {
-		userdata, err = os.ReadFile(a.deployer.UserDataFile)
+		userDataBytes, err := os.ReadFile(a.deployer.UserDataFile)
 		if err != nil {
 			return nil, fmt.Errorf("reading userdata file %q, %w", a.deployer.UserDataFile, err)
 		}
+		userdata = string(userDataBytes)
+
+		if a.deployer.BuildOptions.CommonBuildOptions.StageLocation == "" {
+			return nil, fmt.Errorf("please specify --stage with the s3 bucket")
+		}
+
+		userdata = strings.ReplaceAll(userdata, "{{STAGING_BUCKET}}",
+			a.deployer.BuildOptions.CommonBuildOptions.StageLocation)
+		version, err := utils.SourceVersion(a.deployer.BuildOptions.CommonBuildOptions.RepoRoot)
+		if err != nil {
+			return nil, fmt.Errorf("extracting version from repo %q, %w",
+				a.deployer.BuildOptions.CommonBuildOptions.RepoRoot, err)
+		}
+		userdata = strings.ReplaceAll(userdata, "{{STAGING_VERSION}}", version)
+		userdata = base64.StdEncoding.EncodeToString([]byte(userdata))
 	}
 
 	if len(a.deployer.Images) > 0 {
@@ -505,7 +521,7 @@ func (a *AWSRunner) launchNewInstance(img internalAWSImage) (*ec2.Instance, erro
 		},
 	}
 	if len(img.userData) > 0 {
-		input.UserData = aws.String(base64.StdEncoding.EncodeToString(img.userData))
+		input.UserData = aws.String(img.userData)
 	}
 	if img.instanceProfile != "" {
 		input.IamInstanceProfile = &ec2.IamInstanceProfileSpecification{
