@@ -8,6 +8,9 @@ package_upgrade: true
 package_update: true
 packages:
     - nfs-common
+    - socat
+    - conntrack
+    - awscli
 write_files:
   - path: /tmp/bootstrap/extra-fetches.yaml
     content: |
@@ -112,35 +115,22 @@ write_files:
       #!/bin/bash
       set -xeu
 
-      sudo apt update
-      sudo apt install -y socat conntrack awscli
-
       aws s3 cp s3://{{STAGING_BUCKET}}/{{STAGING_VERSION}}/kubernetes-server-linux-amd64.tar.gz kubernetes-server-linux-amd64.tar.gz --no-sign-request
 
       tar -xvzf kubernetes-server-linux-amd64.tar.gz
       sudo cp ./kubernetes/server/bin/* /usr/local/bin/
-      sudo kubeadm version
-      sudo kubelet --version
 
       VERSION="v1.27.1"
-      wget https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-$VERSION-linux-amd64.tar.gz
-      sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
-      rm -f crictl-$VERSION-linux-amd64.tar.gz
+      curl -sSL --fail --retry 5 https://storage.googleapis.com/k8s-artifacts-cri-tools/release/$VERSION/crictl-$VERSION-linux-amd64.tar.gz | sudo tar -xvzf - -C /usr/local/bin
 
       sudo modprobe br_netfilter
-
       sudo sysctl --system
       sudo systemctl daemon-reload && sudo systemctl restart kubelet
 
       sudo ln -s /home/containerd/usr/local/bin/ctr /usr/local/bin/ctr
       find . -name *.tar | xargs -L 1 ctr -n k8s.io images import
 
-      IMAGE_VERSION_TAG=$(kubelet --version | awk '{print $2}' | sed 's/+/_/')
-      ctr -n k8s.io images tag registry.k8s.io/kube-apiserver-amd64:$IMAGE_VERSION_TAG registry.k8s.io/kube-apiserver:$IMAGE_VERSION_TAG
-      ctr -n k8s.io images tag registry.k8s.io/kube-controller-manager-amd64:$IMAGE_VERSION_TAG registry.k8s.io/kube-controller-manager:$IMAGE_VERSION_TAG
-      ctr -n k8s.io images tag registry.k8s.io/kube-proxy-amd64:$IMAGE_VERSION_TAG registry.k8s.io/kube-proxy:$IMAGE_VERSION_TAG
-      ctr -n k8s.io images tag registry.k8s.io/kube-scheduler-amd64:$IMAGE_VERSION_TAG registry.k8s.io/kube-scheduler:$IMAGE_VERSION_TAG
-      ctr -n k8s.io images tag registry.k8s.io/kubectl-amd64:$IMAGE_VERSION_TAG registry.k8s.io/kubectl:$IMAGE_VERSION_TAG
+      ctr -n k8s.io images ls -q | grep -e amd64 | xargs -L 1 -I '{}' /bin/bash -c 'ctr -n k8s.io images tag "{}" "$(echo "{}" | sed s/-amd64:/:/)"'
 
       sudo kubeadm init \
        --cri-socket /run/containerd/containerd.sock \
