@@ -290,6 +290,10 @@ func (a *AWSRunner) isAWSInstanceRunning(testInstance *awsInstance) (*awsInstanc
 		if err != nil {
 			return nil, fmt.Errorf("checking instance %s is not ready - Command failed: %s", testInstance.instanceID, output)
 		}
+		output, err = remote.SSH(testInstance.instanceID, "kubectl --kubeconfig /etc/kubernetes/admin.conf taint nodes --all node-role.kubernetes.io/control-plane:NoSchedule-")
+		if err != nil {
+			return nil, fmt.Errorf("unable to remove taints for nodes in %s - Command failed: %s", testInstance.instanceID, output)
+		}
 		a.deployer.KubeconfigPath = downloadKubeConfig(testInstance.instanceID, testInstance.publicIP)
 	}
 	klog.Infof("instance %s is running, %w", testInstance.instanceID)
@@ -494,6 +498,10 @@ func (a *AWSRunner) getAWSInstance(img internalAWSImage) (*awsInstance, error) {
 		output, err := remote.SSH(testInstance.instanceID, "kubectl --kubeconfig /etc/kubernetes/admin.conf wait --for=condition=ready nodes --timeout=5m --all")
 		if err != nil {
 			return nil, fmt.Errorf("checking instance %s is not ready - Command failed: %s", testInstance.instanceID, output)
+		}
+		output, err = remote.SSH(testInstance.instanceID, "kubectl --kubeconfig /etc/kubernetes/admin.conf taint nodes --all node-role.kubernetes.io/control-plane:NoSchedule-")
+		if err != nil {
+			return nil, fmt.Errorf("unable to remove taints for nodes in %s - Command failed: %s", testInstance.instanceID, output)
 		}
 		a.deployer.KubeconfigPath = downloadKubeConfig(testInstance.instanceID, testInstance.publicIP)
 	}
