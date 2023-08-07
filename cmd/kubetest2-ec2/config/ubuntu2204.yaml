@@ -140,6 +140,7 @@ write_files:
       ctr -n k8s.io images ls -q | grep -e $ARCH | xargs -L 1 -I '{}' /bin/bash -c 'ctr -n k8s.io images tag "{}" "$(echo "{}" | sed s/-'$ARCH':/:/)"'
 
       sudo kubeadm init \
+       --apiserver-cert-extra-sans $(curl -4 icanhazip.com) \
        --cri-socket /run/containerd/containerd.sock \
        --kubernetes-version=$(kubelet --version | awk '{print $2}') \
        --ignore-preflight-errors=ImagePull \
