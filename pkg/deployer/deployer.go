@@ -19,6 +19,8 @@ package deployer
 
 import (
 	"flag"
+	"fmt"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"os"
 	"path/filepath"
 
@@ -92,6 +94,15 @@ type deployer struct {
 }
 
 func (d *deployer) Down() error {
+	for _, instance := range d.runner.instances {
+		_, err := d.runner.ec2Service.TerminateInstances(&ec2.TerminateInstancesInput{
+			InstanceIds: []*string{&instance.instanceID},
+		})
+		if err != nil {
+			return fmt.Errorf("failed to delete instance %s : %w", instance.instanceID, err)
+		}
+		klog.V(2).Infof("deleted instance id: %s", instance.instanceID)
+	}
 	return nil
 }
 
