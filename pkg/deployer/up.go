@@ -286,6 +286,10 @@ func (a *AWSRunner) isAWSInstanceRunning(testInstance *awsInstance) (*awsInstanc
 	if !instanceRunning {
 		return nil, fmt.Errorf("instance %s is not running, %w", testInstance.instanceID)
 	} else {
+		output, err := remote.SSH(testInstance.instanceID, "kubectl --kubeconfig /etc/kubernetes/admin.conf wait --for=condition=ready nodes --timeout=5m --all")
+		if err != nil {
+			return nil, fmt.Errorf("checking instance %s is not ready - Command failed: %s", testInstance.instanceID, output)
+		}
 		a.deployer.KubeconfigPath = downloadKubeConfig(testInstance.instanceID, testInstance.publicIP)
 	}
 	klog.Infof("instance %s is running, %w", testInstance.instanceID)
@@ -487,6 +491,10 @@ func (a *AWSRunner) getAWSInstance(img internalAWSImage) (*awsInstance, error) {
 	if !instanceRunning {
 		return nil, fmt.Errorf("instance %s is not running, %w", testInstance.instanceID, err)
 	} else {
+		output, err := remote.SSH(testInstance.instanceID, "kubectl --kubeconfig /etc/kubernetes/admin.conf wait --for=condition=ready nodes --timeout=5m --all")
+		if err != nil {
+			return nil, fmt.Errorf("checking instance %s is not ready - Command failed: %s", testInstance.instanceID, output)
+		}
 		a.deployer.KubeconfigPath = downloadKubeConfig(testInstance.instanceID, testInstance.publicIP)
 	}
 
