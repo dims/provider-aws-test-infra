@@ -22,6 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"runtime"
 
 	"k8s.io/klog/v2"
 
@@ -57,6 +58,6 @@ func (d *deployer) Build() error {
 		}
 	}
 	build.StoreCommonBinaries(d.RepoRoot, d.commonOptions.RunDir(),
-		d.BuildOptions.CommonBuildOptions.TargetBuildArch)
+		runtime.GOOS+"/"+runtime.GOARCH)
 	return nil
 }
