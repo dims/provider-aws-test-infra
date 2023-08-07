@@ -57,7 +57,7 @@ func (d *deployer) IsUp() (up bool, err error) {
 		if instance == nil {
 			return false, fmt.Errorf("instance %s not yet started", instance.instance.InstanceId)
 		}
-		klog.V(2).Infof("found instance id: %s", instance.instanceID)
+		klog.Infof("found instance id: %s", instance.instanceID)
 		d.KubeconfigPath = downloadKubeConfig(instance.instanceID, instance.publicIP)
 		break
 	}
@@ -85,12 +85,12 @@ func (d *deployer) IsUp() (up bool, err error) {
 // kubectl detection using legacy verify-get-kube-binaries is unreliable
 // https://github.com/kubernetes/kubernetes/blob/b10d82b93bad7a4e39b9d3f5c5e81defa3af68f0/cluster/kubectl.sh#L25-L26
 func (d *deployer) verifyKubectl() (string, error) {
-	klog.V(2).Infof("checking locally built kubectl ...")
+	klog.Infof("checking locally built kubectl ...")
 	localKubectl := filepath.Join(d.commonOptions.RunDir(), "kubectl")
 	if _, err := os.Stat(localKubectl); err == nil {
 		return localKubectl, nil
 	}
-	klog.V(2).Infof("could not find locally built kubectl, checking existence of kubectl in $PATH ...")
+	klog.Infof("could not find locally built kubectl, checking existence of kubectl in $PATH ...")
 	kubectlPath, err := osexec.LookPath("kubectl")
 	if err != nil {
 		return "", fmt.Errorf("could not find kubectl in $PATH, please ensure your environment has the kubectl binary")
@@ -99,7 +99,7 @@ func (d *deployer) verifyKubectl() (string, error) {
 }
 
 func (d *deployer) Up() error {
-	klog.V(1).Info("EC2 deployer starting Up()")
+	klog.Info("EC2 deployer starting Up()")
 
 	path, err := d.verifyKubectl()
 	if err != nil {
@@ -118,7 +118,7 @@ func (d *deployer) Up() error {
 		if err != nil {
 			return err
 		}
-		klog.V(2).Infof("starting instance id: %s", instance.instanceID)
+		klog.Infof("starting instance id: %s", instance.instanceID)
 		runner.instances = append(runner.instances, instance)
 	}
 	return nil

@@ -30,7 +30,7 @@ import (
 )
 
 func (d *deployer) Build() error {
-	klog.V(1).Info("EC2 deployer starting Build()")
+	klog.Info("EC2 deployer starting Build()")
 
 	sess, err := session.NewSession(&aws.Config{Region: aws.String(d.Region)})
 	if err != nil {
@@ -45,7 +45,7 @@ func (d *deployer) Build() error {
 	d.BuildOptions.Validate()
 
 	// this supports the kubernetes/kubernetes build
-	klog.V(2).Info("starting to build kubernetes")
+	klog.Info("starting to build kubernetes")
 	version, err := d.BuildOptions.Build()
 	if err != nil {
 		return err

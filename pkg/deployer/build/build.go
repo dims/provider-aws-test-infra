@@ -57,7 +57,7 @@ func StoreCommonBinaries(kuberoot string, outroot string, targetBuildArch string
 		source := filepath.Join(root, binary)
 		dest := filepath.Join(outroot, binary)
 		if _, err := os.Stat(source); err == nil {
-			klog.V(2).Infof("copying %s to %s ...", source, dest)
+			klog.Infof("copying %s to %s ...", source, dest)
 			if err := fs.CopyFile(source, dest); err != nil {
 				klog.Warningf("failed to copy %s to %s: %v", source, dest, err)
 			}
