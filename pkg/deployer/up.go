@@ -296,7 +296,7 @@ func (a *AWSRunner) isAWSInstanceRunning(testInstance *awsInstance) (*awsInstanc
 		}
 		a.deployer.KubeconfigPath = downloadKubeConfig(testInstance.instanceID, testInstance.publicIP)
 	}
-	klog.Infof("instance %s is running, %w", testInstance.instanceID)
+	klog.Infof("instance %s is running", testInstance.instanceID)
 	return testInstance, nil
 }
 
@@ -505,7 +505,7 @@ func (a *AWSRunner) getAWSInstance(img internalAWSImage) (*awsInstance, error) {
 		}
 		a.deployer.KubeconfigPath = downloadKubeConfig(testInstance.instanceID, testInstance.publicIP)
 	}
-
+	klog.Infof("instance %s is running", testInstance.instanceID)
 	return testInstance, nil
 }
 

@@ -101,7 +101,7 @@ func (d *deployer) Down() error {
 		if err != nil {
 			return fmt.Errorf("failed to delete instance %s : %w", instance.instanceID, err)
 		}
-		klog.V(2).Infof("deleted instance id: %s", instance.instanceID)
+		klog.Infof("deleted instance id: %s", instance.instanceID)
 	}
 	return nil
 }
