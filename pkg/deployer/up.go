@@ -27,6 +27,7 @@ import (
 	"os"
 	osexec "os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -57,7 +58,7 @@ func (d *deployer) IsUp() (up bool, err error) {
 			return false, fmt.Errorf("instance %s not yet started", instance.instance.InstanceId)
 		}
 		klog.V(2).Infof("found instance id: %s", instance.instanceID)
-		d.KubeconfigPath = downloadKubeConfig(instance.instanceID)
+		d.KubeconfigPath = downloadKubeConfig(instance.instanceID, instance.publicIP)
 		break
 	}
 	args := []string{
@@ -264,6 +265,20 @@ func (a *AWSRunner) isAWSInstanceRunning(testInstance *awsInstance) (*awsInstanc
 			err = fmt.Errorf("instance %s is still running cloud-init daemon: %s", testInstance.instanceID, output)
 			continue
 		}
+		output, err = remote.SSH(testInstance.instanceID, "kubectl --kubeconfig /etc/kubernetes/admin.conf version")
+		if err != nil {
+			err = fmt.Errorf("checking instance %s is api server running - Command failed: %s", testInstance.instanceID, output)
+			continue
+		}
+		output, err = remote.SSH(testInstance.instanceID, "kubectl --kubeconfig /etc/kubernetes/admin.conf get nodes -o name")
+		if err != nil {
+			err = fmt.Errorf("checking instance %s is node present - Command failed: %s", testInstance.instanceID, output)
+			continue
+		}
+		if !strings.Contains(output, "node/") {
+			err = fmt.Errorf("instance %s does not yet have a node: %s", testInstance.instanceID, output)
+			continue
+		}
 
 		instanceRunning = true
 	}
@@ -271,14 +286,14 @@ func (a *AWSRunner) isAWSInstanceRunning(testInstance *awsInstance) (*awsInstanc
 	if !instanceRunning {
 		return nil, fmt.Errorf("instance %s is not running, %w", testInstance.instanceID)
 	} else {
-		a.deployer.KubeconfigPath = downloadKubeConfig(testInstance.instanceID)
+		a.deployer.KubeconfigPath = downloadKubeConfig(testInstance.instanceID, testInstance.publicIP)
 	}
 	klog.Infof("instance %s is running, %w", testInstance.instanceID)
 	return testInstance, nil
 }
 
-func downloadKubeConfig(instanceID string) string {
-	output, err := remote.SSH(instanceID, "sh", "-c", "cat /etc/kubernetes/admin.conf")
+func downloadKubeConfig(instanceID string, publicIp string) string {
+	output, err := remote.SSH(instanceID, "cat /etc/kubernetes/admin.conf")
 	if err != nil {
 		klog.Fatalf("error downloading KUBECONFIG file: %v", err)
 	}
@@ -291,6 +306,9 @@ func downloadKubeConfig(instanceID string) string {
 	if err = os.Chmod(kubeconfigFile, 0400); err != nil {
 		klog.Fatalf("chmod'ing KUBECONFIG file, %w", err)
 	}
+
+	var re = regexp.MustCompile(`server: https://(.*):6443`)
+	output = re.ReplaceAllString(output, "server: https://"+publicIp+":6443")
 
 	if _, err = f.Write([]byte(output)); err != nil {
 		klog.Fatalf("writing KUBECONFIG file, %w", err)
@@ -448,6 +466,20 @@ func (a *AWSRunner) getAWSInstance(img internalAWSImage) (*awsInstance, error) {
 			err = fmt.Errorf("instance %s is still running cloud-init daemon: %s", testInstance.instanceID, output)
 			continue
 		}
+		output, err = remote.SSH(testInstance.instanceID, "kubectl --kubeconfig /etc/kubernetes/admin.conf version")
+		if err != nil {
+			err = fmt.Errorf("checking instance %s is api server running - Command failed: %s", testInstance.instanceID, output)
+			continue
+		}
+		output, err = remote.SSH(testInstance.instanceID, "kubectl --kubeconfig /etc/kubernetes/admin.conf get nodes -o name")
+		if err != nil {
+			err = fmt.Errorf("checking instance %s is node present - Command failed: %s", testInstance.instanceID, output)
+			continue
+		}
+		if !strings.Contains(output, "node/") {
+			err = fmt.Errorf("instance %s does not yet have a node: %s", testInstance.instanceID, output)
+			continue
+		}
 
 		instanceRunning = true
 	}
@@ -455,7 +487,7 @@ func (a *AWSRunner) getAWSInstance(img internalAWSImage) (*awsInstance, error) {
 	if !instanceRunning {
 		return nil, fmt.Errorf("instance %s is not running, %w", testInstance.instanceID, err)
 	} else {
-		a.deployer.KubeconfigPath = downloadKubeConfig(testInstance.instanceID)
+		a.deployer.KubeconfigPath = downloadKubeConfig(testInstance.instanceID, testInstance.publicIP)
 	}
 
 	return testInstance, nil
