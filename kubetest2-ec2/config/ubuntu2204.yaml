@@ -12,6 +12,9 @@ packages:
     - conntrack
     - awscli
     - net-tools
+    - jq
+    - python3
+    - tree
 write_files:
   - path: /tmp/bootstrap/extra-fetches.yaml
     content: |
