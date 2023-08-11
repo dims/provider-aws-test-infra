@@ -121,7 +121,7 @@ func (d *deployer) Up() error {
 		if err != nil {
 			return err
 		}
-		klog.Infof("starting instance id: %s", instance.instanceID)
+		klog.Infof("started instance id: %s", instance.instanceID)
 		runner.instances = append(runner.instances, instance)
 	}
 
@@ -461,7 +461,7 @@ func (a *AWSRunner) getAWSInstance(img internalAWSImage) (*awsInstance, error) {
 		return nil, err
 	}
 	instance = newInstance
-	klog.Infof("launched new instance %s with ami-id: %s", *instance.InstanceId, *instance.ImageId)
+	klog.Infof("launching new instance %s with ami-id: %s", *instance.InstanceId, *instance.ImageId)
 
 	testInstance := &awsInstance{
 		instanceID: *instance.InstanceId,
