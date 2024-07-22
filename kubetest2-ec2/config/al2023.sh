@@ -87,6 +87,12 @@ if [ "$os" == "amzn2023" ]; then
   sed -i "s/^MACAddressPolicy=.*/MACAddressPolicy=none/" /usr/lib/systemd/network/99-default.link
   systemctl restart systemd-resolved
 
+  systemctl daemon-reload
+  systemctl is-active systemd-networkd-wait-online
+  systemctl status systemd-resolved
+  resolvectl status
+  dig @8.8.8.8 www.google.com
+
   # Remove duplicate lines in /etc/resolv.conf
   awk -i inplace '!seen[$0]++'  /etc/resolv.conf || true
   RESOLVE_CONF=/run/systemd/resolve/resolv.conf
@@ -122,6 +128,8 @@ nodeRegistration:
     image-credential-provider-bin-dir: /etc/eks/image-credential-provider/
     image-credential-provider-config: /etc/eks/image-credential-provider/config.json
     resolv-conf: $RESOLVE_CONF
+    cluster-dns: 10.96.0.10
+    cluster-domain: cluster.local
 EOF
 
 cat <<EOF > /etc/eks/image-credential-provider/config.json

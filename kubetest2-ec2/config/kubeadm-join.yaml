@@ -17,3 +17,5 @@ nodeRegistration:
     image-credential-provider-bin-dir: /usr/local/bin
     image-credential-provider-config: /etc/kubernetes/credential-provider.yaml
     resolv-conf: /run/systemd/resolve/resolv.conf
+    cluster-dns: 10.96.0.10
+    cluster-domain: cluster.local

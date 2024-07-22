@@ -55,6 +55,8 @@ if [[ ${KUBEADM_CONTROL_PLANE} == true ]]; then
   TOKEN=$(curl --request PUT "http://169.254.169.254/latest/api/token" --header "X-aws-ec2-metadata-token-ttl-seconds: 3600" -s)
   MAC=$(curl -s $META_URL/network/interfaces/macs/ -s --header "X-aws-ec2-metadata-token: $TOKEN" | head -n 1)
   POD_CIDR=$(curl -s $META_URL/network/interfaces/macs/"$MAC"/vpc-ipv4-cidr-blocks --header "X-aws-ec2-metadata-token: $TOKEN" | shuf -n 1)
+  # special case for 0.0, to avoid coredns and vpc dns clashing
+  POD_CIDR=$(echo $POD_CIDR | sed 's/0\.0/1.0/')
 
   sed -i "s|{{BOOTSTRAP_TOKEN}}|{{KUBEADM_TOKEN}}|g" /etc/kubernetes/kubeadm-init.yaml
   EXTRA_SANS=$(curl -s --connect-timeout 3 $META_URL/public-ipv4 --header "X-aws-ec2-metadata-token: $TOKEN")
