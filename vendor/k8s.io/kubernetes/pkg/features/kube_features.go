@@ -813,6 +813,12 @@ const (
 	// Adds the AllocatedResourcesStatus to the container status.
 	ResourceHealthStatus featuregate.Feature = "ResourceHealthStatus"
 
+	// owner: @SergeyKanzhelev
+	// kep: https://kep.k8s.io/4680
+	//
+	// Adds a message to the AllocatedResourcesStatus entries.
+	ResourceHealthStatusMessage featuregate.Feature = "ResourceHealthStatusMessage"
+
 	// owner: @yuanwang04
 	// kep: https://kep.k8s.io/5532
 	//
@@ -933,6 +939,27 @@ const (
 	// Introduces the ability for the DaemonSet controller to be able to read its writes
 	// prior to running a reconcile on the same object.
 	StaleControllerConsistencyDaemonSet featuregate.Feature = "StaleControllerConsistencyDaemonSet"
+
+	// owner: @michaelasp
+	// kep: http://kep.k8s.io/5647
+	//
+	// Introduces the ability for the Job controller to be able to read its writes
+	// prior to running a reconcile on the same object.
+	StaleControllerConsistencyJob featuregate.Feature = "StaleControllerConsistencyJob"
+
+	// owner: @michaelasp
+	// kep: http://kep.k8s.io/5647
+	//
+	// Introduces the ability for the ReplicaSet controller to be able to read its writes
+	// prior to running a reconcile on the same object.
+	StaleControllerConsistencyReplicaSet featuregate.Feature = "StaleControllerConsistencyReplicaSet"
+
+	// owner: @michaelasp
+	// kep: http://kep.k8s.io/5647
+	//
+	// Introduces the ability for the StatefulSet controller to be able to read its writes
+	// prior to running a reconcile on the same object.
+	StaleControllerConsistencyStatefulSet featuregate.Feature = "StaleControllerConsistencyStatefulSet"
 
 	// owner: @liggitt
 	//
@@ -1211,6 +1238,7 @@ var defaultVersionedKubernetesFeatureGates = map[featuregate.Feature]featuregate
 
 	DRAConsumableCapacity: {
 		{Version: version.MustParse("1.34"), Default: false, PreRelease: featuregate.Alpha},
+		{Version: version.MustParse("1.36"), Default: true, PreRelease: featuregate.Beta},
 	},
 
 	DRADeviceBindingConditions: {
@@ -1506,6 +1534,7 @@ var defaultVersionedKubernetesFeatureGates = map[featuregate.Feature]featuregate
 		{Version: version.MustParse("1.33"), Default: false, PreRelease: featuregate.Alpha},
 		{Version: version.MustParse("1.34"), Default: false, PreRelease: featuregate.Beta},
 		{Version: version.MustParse("1.35"), Default: true, PreRelease: featuregate.Beta},
+		{Version: version.MustParse("1.36"), Default: true, PreRelease: featuregate.GA, LockToDefault: true}, // remove in 1.38
 	},
 
 	MutablePVNodeAffinity: {
@@ -1686,6 +1715,11 @@ var defaultVersionedKubernetesFeatureGates = map[featuregate.Feature]featuregate
 
 	ResourceHealthStatus: {
 		{Version: version.MustParse("1.31"), Default: false, PreRelease: featuregate.Alpha},
+		{Version: version.MustParse("1.36"), Default: true, PreRelease: featuregate.Beta},
+	},
+
+	ResourceHealthStatusMessage: {
+		{Version: version.MustParse("1.36"), Default: true, PreRelease: featuregate.Beta},
 	},
 
 	RestartAllContainersOnContainerExits: {
@@ -1704,6 +1738,7 @@ var defaultVersionedKubernetesFeatureGates = map[featuregate.Feature]featuregate
 	SELinuxChangePolicy: {
 		{Version: version.MustParse("1.32"), Default: false, PreRelease: featuregate.Alpha},
 		{Version: version.MustParse("1.33"), Default: true, PreRelease: featuregate.Beta},
+		{Version: version.MustParse("1.36"), Default: true, PreRelease: featuregate.GA, LockToDefault: true}, // remove in 1.39, locked to default in 1.36
 	},
 
 	SELinuxMount: {
@@ -1715,6 +1750,7 @@ var defaultVersionedKubernetesFeatureGates = map[featuregate.Feature]featuregate
 		{Version: version.MustParse("1.25"), Default: false, PreRelease: featuregate.Alpha},
 		{Version: version.MustParse("1.27"), Default: false, PreRelease: featuregate.Beta},
 		{Version: version.MustParse("1.28"), Default: true, PreRelease: featuregate.Beta},
+		{Version: version.MustParse("1.36"), Default: true, PreRelease: featuregate.GA, LockToDefault: true}, // remove in 1.39, locked to default in 1.36
 	},
 
 	SchedulerAsyncAPICalls: {
@@ -1780,6 +1816,18 @@ var defaultVersionedKubernetesFeatureGates = map[featuregate.Feature]featuregate
 		{Version: version.MustParse("1.36"), Default: true, PreRelease: featuregate.Beta},
 	},
 
+	StaleControllerConsistencyJob: {
+		{Version: version.MustParse("1.36"), Default: true, PreRelease: featuregate.Beta},
+	},
+
+	StaleControllerConsistencyReplicaSet: {
+		{Version: version.MustParse("1.36"), Default: true, PreRelease: featuregate.Beta},
+	},
+
+	StaleControllerConsistencyStatefulSet: {
+		{Version: version.MustParse("1.36"), Default: true, PreRelease: featuregate.Beta},
+	},
+
 	StatefulSetSemanticRevisionComparison: {
 		// This is a mitigation for a 1.34 regression due to serialization differences that cannot be feature-gated,
 		// so this mitigation should not auto-disable even if emulating versions prior to 1.34 with --emulation-version.
@@ -1812,6 +1860,7 @@ var defaultVersionedKubernetesFeatureGates = map[featuregate.Feature]featuregate
 
 	StrictIPCIDRValidation: {
 		{Version: version.MustParse("1.33"), Default: false, PreRelease: featuregate.Alpha},
+		{Version: version.MustParse("1.36"), Default: true, PreRelease: featuregate.Beta},
 	},
 
 	SupplementalGroupsPolicy: {
@@ -2094,6 +2143,7 @@ var defaultVersionedKubernetesFeatureGates = map[featuregate.Feature]featuregate
 
 	genericfeatures.UnknownVersionInteroperabilityProxy: {
 		{Version: version.MustParse("1.28"), Default: false, PreRelease: featuregate.Alpha},
+		{Version: version.MustParse("1.36"), Default: true, PreRelease: featuregate.Beta},
 	},
 
 	genericfeatures.WatchCacheInitializationPostStartHook: {
@@ -2365,6 +2415,8 @@ var defaultKubernetesFeatureGateDependencies = map[featuregate.Feature][]feature
 
 	ResourceHealthStatus: {DynamicResourceAllocation},
 
+	ResourceHealthStatusMessage: {ResourceHealthStatus},
+
 	// RestartAllContainersOnContainerExits introduces a new container restart rule action.
 	// All restart rules will be dropped by API if ContainerRestartRules feature is not enabled.
 	RestartAllContainersOnContainerExits: {ContainerRestartRules, NodeDeclaredFeatures},
@@ -2402,6 +2454,12 @@ var defaultKubernetesFeatureGateDependencies = map[featuregate.Feature][]feature
 	SidecarContainers: {},
 
 	StaleControllerConsistencyDaemonSet: {featuregate.Feature(clientfeatures.AtomicFIFO)},
+
+	StaleControllerConsistencyJob: {featuregate.Feature(clientfeatures.AtomicFIFO)},
+
+	StaleControllerConsistencyReplicaSet: {featuregate.Feature(clientfeatures.AtomicFIFO)},
+
+	StaleControllerConsistencyStatefulSet: {featuregate.Feature(clientfeatures.AtomicFIFO)},
 
 	StatefulSetSemanticRevisionComparison: {},
 
