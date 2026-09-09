@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ec2instanceconnect v1.25.3
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.52.3
 	github.com/google/uuid v1.6.0
-	golang.org/x/crypto v0.54.0
+	golang.org/x/crypto v0.56.0
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/kubernetes v0.0.0
 	sigs.k8s.io/yaml v1.6.0
@@ -88,7 +88,7 @@ require (
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/term v0.45.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
@@ -104,7 +104,7 @@ require (
 	k8s.io/component-base v0.29.2 // indirect
 	k8s.io/component-helpers v0.29.2 // indirect
 	k8s.io/controller-manager v0.29.2 // indirect
-	k8s.io/kube-openapi v0.0.0-20260904170622-9ab3195f2a72 // indirect
+	k8s.io/kube-openapi v0.0.0-20260908163437-c4db2bdfbfe6 // indirect
 	k8s.io/kubectl v0.29.2 // indirect
 	k8s.io/kubelet v0.29.2 // indirect
 	k8s.io/utils v0.0.0-20260626114624-be93311217bd // indirect
