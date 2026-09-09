@@ -43,12 +43,13 @@ import (
 //	<number>          ::= <digits> | <digits>.<digits> | <digits>. | .<digits>
 //	<sign>            ::= "+" | "-"
 //	<signedNumber>    ::= <number> | <sign><number>
+//	<signedDigits>    ::= <digits> | <sign><digits>
 //	<suffix>          ::= <binarySI> | <decimalExponent> | <decimalSI>
 //	<binarySI>        ::= Ki | Mi | Gi | Ti | Pi | Ei
 //	    (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)
 //	<decimalSI>       ::= n | u | m | "" | k | M | G | T | P | E
 //	    (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)
-//	<decimalExponent> ::= "e" <signedNumber> | "E" <signedNumber>
+//	<decimalExponent> ::= "e" <signedDigits> | "E" <signedDigits>
 //
 // A decimal quantity is not capped at 2^63-1 in magnitude, and no quantity is
 // limited to three decimal places: "18446744073709551616" keeps its value, and
@@ -458,7 +459,7 @@ func (q *Quantity) CanonicalizeBytes(out []byte) (result, suffix []byte) {
 		// format must be BinarySI
 		number, exponent := rounded.AsCanonicalBase1024Bytes(out)
 		suffix, ok := quantitySuffixer.constructBytes(2, exponent*10, format)
-		if !ok {
+		if !ok && exponent != 0 {
 			// BinarySI only defines suffixes up to "Ei" (2^60). For a larger
 			// exponent there is no suffix, so fall back to decimal exponent
 			// notation ("e") instead of dropping the suffix, which would
@@ -488,7 +489,8 @@ func (q *Quantity) AsApproximateFloat64() float64 {
 		base = float64(q.i.value)
 		exponent = int(q.i.scale)
 	}
-	if exponent == 0 {
+	// Avoid 0 * Inf, which returns NaN.
+	if base == 0 || exponent == 0 {
 		return base
 	}
 
